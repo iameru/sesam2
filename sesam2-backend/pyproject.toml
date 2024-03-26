@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "sesam2-backend"
+version = "0.1.0"
+description = "backend for the sesam door opener"
+authors = ["iameru <post@i3o.eu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.110.0"
+pydantic = "^2.6.4"
+sqlmodel = "^0.0.16"
+uvicorn = "^0.29.0"
+pydantic-settings = "^2.2.1"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
