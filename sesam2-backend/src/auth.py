@@ -8,6 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime
 from pydantic import BaseModel, ValidationError
 from passlib.context import CryptContext
+from .db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -21,14 +22,14 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def create_token(username: str, door_grants: List[DoorGrant]) -> JWTResponse:
+def create_token(user: User, door_grants: List[DoorGrant]) -> JWTResponse:
     valid_until = time_now() + config.jwt_valid_token_time
 
     claims = JWTClaims(
-        name=username,
+        name=user.name,
         exp=valid_until,
         door_grants=door_grants,
-        is_admin=False,
+        is_admin=user.is_admin,
     )
 
     token = jwt.encode(

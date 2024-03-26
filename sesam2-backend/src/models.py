@@ -33,3 +33,15 @@ class DoorResponse(BaseModel):
     status: STATUS
     message: str | None
     door_id: UUID
+
+
+from .db.models import User as DBUser, DoorGrant as DBDoorGrant
+
+class CreateUserRequest(BaseModel):
+    user: DBUser
+
+
+class CreateUserResponse(BaseModel):
+    status: STATUS
+    message: str | None
+    

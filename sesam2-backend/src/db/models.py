@@ -1,18 +1,30 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import uuid4, UUID
-from sqlmodel import Field, SQLModel
-from datetime import datetime
+from sqlmodel import Field, SQLModel, Relationship
+from datetime import datetime, time
 from ..utils import time_now
 
 
-class User(SQLModel, table=True):
+class DBModel(SQLModel):
+    created: Optional[datetime] = Field(default_factory=time_now)
+    updated: datetime | None = None
+
+
+class DoorGrant(DBModel, table=True):
+    uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
+    user_uuid: UUID = Field(foreign_key="user.uuid")
+    door_uuid: UUID
+    weekday: int
+    grant_start: time
+    grant_end: time
+
+    user: "User" = Relationship(back_populates="door_grants")
+
+
+class User(DBModel, table=True):
     uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
     name: str
     password: str
-    created: Optional[datetime] = Field(default_factory=time_now)
+    is_admin: bool = False
 
-class Administrator(SQLModel, table=True):
-    uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
-    name: str
-    role: str
-    created: Optional[datetime] = Field(default_factory=time_now)
+    door_grants: List[DoorGrant] = Relationship(back_populates="user")

@@ -30,20 +30,15 @@ door_grants=[
     DoorGrant(door_id=1, weekday=3, grant_start=time(10,0), grant_end=time(12,0)),
     DoorGrant(door_id=1, weekday=3, grant_start=time(14,0), grant_end=time(15,0)),
 ]
-@app.get("/")
-async def root():
-    token = create_token("dev", door_grants=door_grants)
-    validated = validate_token(token.access_token)
-    return {"now": time_now(), "token": token, "name": validated.name, "door_grants": validated.door_grants}
 
 
-@app.post("/token")
+@app.post("/token", response_model=JWTResponse)
 async def token_login(username: str, password: str):
     with get_session() as session:
         user = session.exec(select(models.User).where(models.User.name == username)).first()
         if user and verify_password(password, user.password):
 
-            return create_token(username, door_grants=door_grants)
+            return create_token(user, door_grants=door_grants)
 
         return {"error": "Invalid user data"}
 
@@ -58,6 +53,3 @@ async def stuff(token: Annotated[JWTClaims, Depends(validate_token)], door_id: U
     return DoorResponse(message="door opened successfull", status='success', door_id=door_id)
 
 
-@app.get("/stuff")
-async def stuff(token: Annotated[JWTClaims, Depends(validate_token)]):
-    return {"now": time_now(), "token": token}
