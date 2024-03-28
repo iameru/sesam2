@@ -18,9 +18,13 @@ Path("db.sqlite3").unlink(missing_ok=True)
 ## create the database and the initial admin
 SQLModel.metadata.create_all(create_engine())
 with get_session() as session:
-    admin_user = create_user(session, username=config.admin_user, password=config.admin_user_password, is_admin=True)
+    admin_user = create_user(session,
+                             username=config.admin_user,
+                             hashed_password=get_password_hash(config.admin_user_password),
+                             is_admin=True,
+                             )
     # to be deleted ##########################
-    normal_user = create_user(session, username='test', password='test')
+    normal_user = create_user(session, username='test', hashed_password=get_password_hash('test'))
 
     now = time_now()
     [session.add(door_grant) for door_grant in [
@@ -78,10 +82,17 @@ async def open_door(claim: Annotated[JWTClaims, Depends(validate_token)], door_i
 
 
 @app.post("/admin/create_user", response_model=JSONResponse)
-async def create_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: CreateUserRequest) -> Response:
+async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: CreateUserRequest) -> Response:
     if claim.is_admin:
         with get_session() as session:
-            # create the user
+            user = create_user(
+                session,
+                username=request.username,
+                hashed_password=get_password_hash(request.password),
+                is_admin=request.is_admin
+            )
+            session.add(user)
+            session.commit()
             return JSONResponse(status='success', message='User created successfully')
     return Response(status_code=401, content="Invalid credentials")
 

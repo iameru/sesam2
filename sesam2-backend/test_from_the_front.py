@@ -1,3 +1,14 @@
+"""
+Some basic testing of the API from the front-end perspective. This is not a
+complete test suite and will never be.
+prerequisites:
+    - start a server reachable at http://localhost:8000
+    - use a dev environment OR
+        - have a user 'test' with password 'test'
+        - have a admin user 'admin' with password 'admin'
+        - have a legit door with id '001b823d-1f5c-4f39-9e74-015bb2dcef8f'
+
+"""
 import requests
 from requests import Response
 import jose
@@ -9,6 +20,7 @@ from datetime import datetime, time, timedelta
 INVALID_DOOR_ID = "0000000000000-1000-1000-000000000000"
 VALID_DOOR_ID = "001b823d-1f5c-4f39-9e74-015bb2dcef8f"
 APP_URL = "http://localhost:8000"
+
 now = datetime.now()
 
 
@@ -70,7 +82,6 @@ def test_create_normal_user(admin_token):
     assert response.json().get('status') == 'success'
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
 def test_get_token_of_created_user():
     response = get_token('knut', 'knut')
     assert response.status_code == 200
