@@ -1,6 +1,6 @@
 from .utils import time_now
 from .config import config
-from .models import JWTClaims, JWTResponse, DoorGrant
+from .models import JWTClaims, JWTResponse, JWTDoorGrant
 from jose import JWTError, jwt
 from typing import Annotated, List
 from fastapi import HTTPException, status, Depends
@@ -22,13 +22,23 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def create_token(user: User, door_grants: List[DoorGrant]) -> JWTResponse:
+def create_token(user: User) -> JWTResponse:
     valid_until = time_now() + config.jwt_valid_token_time
 
+    jwt_door_grants = [
+        JWTDoorGrant(
+            door_uuid=door_grant.door_uuid,
+            weekday=door_grant.weekday,
+            grant_start=door_grant.grant_start,
+            grant_end=door_grant.grant_end,
+        )
+        for door_grant in user.door_grants
+    ]
     claims = JWTClaims(
         name=user.name,
+        user_uuid=user.uuid,
         exp=valid_until,
-        door_grants=door_grants,
+        door_grants=jwt_door_grants,
         is_admin=user.is_admin,
     )
 

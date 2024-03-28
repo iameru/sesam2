@@ -6,8 +6,9 @@ from enum import StrEnum
 
 STATUS = Literal['success', 'error']
 
-class DoorGrant(BaseModel):
-    door_id: int
+
+class JWTDoorGrant(BaseModel):
+    door_uuid: UUID
     weekday: int
     grant_start: time
     grant_end: time
@@ -16,11 +17,15 @@ class DoorGrant(BaseModel):
     def serialize_time(self, time: time):
         return time.isoformat()
 
+    @field_serializer('door_uuid')
+    def serialize_uuid(self, uuid: UUID):
+        return str(uuid)
+
 
 class JWTClaims(BaseModel):
     name: str
     exp: datetime
-    door_grants: list[DoorGrant] = []
+    door_grants: list[JWTDoorGrant] = []
     is_admin: bool = False
 
 
@@ -29,19 +34,14 @@ class JWTResponse(BaseModel):
     expires: datetime
 
 
-class DoorResponse(BaseModel):
+class JSONResponse(BaseModel):
     status: STATUS
     message: str | None
+
+
+class DoorResponse(JSONResponse):
     door_id: UUID
 
 
-from .db.models import User as DBUser, DoorGrant as DBDoorGrant
-
-class CreateUserRequest(BaseModel):
-    user: DBUser
-
-
-class CreateUserResponse(BaseModel):
-    status: STATUS
-    message: str | None
-    
+class CreateUserResponse(JSONResponse):
+    user: str | None
