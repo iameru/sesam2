@@ -36,11 +36,25 @@ class Group(DBModel, table=True):
 
 class User(DBModel, table=True):
     uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
-    group_uuid: UUID | None = Field(foreign_key="group.uuid")
-
     name: str = Field(index=True, unique=True)
-    password: str
+    password: str | None = None
     is_admin: bool = False
+    is_active: bool = False
 
+    group_uuid: UUID | None = Field(foreign_key="group.uuid")
     group: Group = Relationship(back_populates="users")
+
     door_grants: List[DoorGrant] = Relationship(back_populates="user")
+
+    registration_code_uuid: UUID | None = Field(foreign_key="registration_code.uuid")
+    registration_code: "RegistrationCode" = Relationship(back_populates="user")
+
+
+class RegistrationCode(DBModel, table=True):
+    __tablename__ = "registration_code"
+    uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
+
+    code: str = Field(index=True, unique=True)
+    valid_until: datetime
+
+    user: User = Relationship(back_populates="registration_code")

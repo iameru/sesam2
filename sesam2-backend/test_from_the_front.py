@@ -81,6 +81,13 @@ def test_create_normal_user(admin_token):
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
 
+    registration_code = response.json().get('registration_code')
+    assert registration_code
+
+    url = f"{APP_URL}/register"
+    response = requests.post(url, json=dict(username='knut', password='knut', registration_code=registration_code))
+    assert response.status_code == 200
+
 
 def test_get_token_of_created_user():
     response = get_token('knut', 'knut')

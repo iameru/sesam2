@@ -45,3 +45,21 @@ class DoorResponse(JSONResponse):
 
 class CreateUserResponse(JSONResponse):
     user: str | None
+
+
+class CreateUserResponse(JSONResponse):
+    registration_code: str
+
+
+class TokenRequest(BaseModel):
+    username: str
+    password: str
+
+
+class RegistrationRequest(TokenRequest):
+    registration_code: str
+
+
+class CreateUserRequest(TokenRequest):
+    is_admin: bool = False
+

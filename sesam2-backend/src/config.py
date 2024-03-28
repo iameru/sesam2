@@ -9,6 +9,7 @@ class Config(BaseSettings):
     database_url: str
     secret_key: str
     timezone: tz = tz(timedelta(hours=1))
+    auth_valid_registration_code_time: timedelta = timedelta(hours=1)
     jwt_valid_token_time: timedelta = timedelta(weeks=4)
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
