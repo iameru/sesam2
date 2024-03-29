@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Response
 from .config import config
-from .db import create_engine, get_session, models, create_user
+from .db import create_engine, get_session, create_user
+from .db.models import User, RegistrationCode, DoorGrant
 from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, validate_admin_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
@@ -29,13 +30,13 @@ with get_session() as session:
 
     now = time_now()
     [session.add(door_grant) for door_grant in [
-        models.DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=1, grant_start=time(hour=8), grant_end=time(hour=16)),
-        models.DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=2, grant_start=time(hour=8), grant_end=time(hour=16)),
-        models.DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
-        models.DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
-        models.DoorGrant(user_uuid=admin_user.uuid, door_uuid="001b823d-1f5c-4f39-9e74-015bb2dcef8f", weekday=now.isoweekday(), grant_start=time(hour=now.hour), grant_end=time(hour=23)),
-        models.DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
-        models.DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
+        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=1, grant_start=time(hour=8), grant_end=time(hour=16)),
+        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=2, grant_start=time(hour=8), grant_end=time(hour=16)),
+        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
+        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
+        DoorGrant(user_uuid=admin_user.uuid, door_uuid="001b823d-1f5c-4f39-9e74-015bb2dcef8f", weekday=now.isoweekday(), grant_start=time(hour=now.hour), grant_end=time(hour=23)),
+        DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
+        DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
     ]]
     # is for development only #################
     session.commit()
@@ -54,10 +55,10 @@ async def token_login(data: TokenRequest) -> Response:
     username = data.username
     password = data.password
     with get_session() as session:
-        user: models.User = session.exec(
-                select(models.User)
-                .where(models.User.name == username)
-                .where(models.User.is_active == True)
+        user: User = session.exec(
+                select(User)
+                .where(User.name == username)
+                .where(User.is_active == True)
             ).one_or_none()
         if user and verify_password(password, user.password):
             return create_token(user)
@@ -69,9 +70,9 @@ async def register(data: RegistrationRequest) -> Response:
 
     with get_session() as session:
         registration_code = session.exec(
-            select(models.RegistrationCode)
-                .where(models.RegistrationCode.code == data.registration_code)
-                .where(models.RegistrationCode.valid_until >= time_now())
+            select(RegistrationCode)
+                .where(RegistrationCode.code == data.registration_code)
+                .where(RegistrationCode.valid_until >= time_now())
         ).one_or_none()
         
         if not registration_code:
@@ -91,14 +92,14 @@ async def register(data: RegistrationRequest) -> Response:
 async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)], request: CreateUserRequest) -> Response:
     # if claim.is_admin:
     with get_session() as session:
-        if not session.exec(select(models.User).where(models.User.name == request.username)).first():
-            user = models.User(
+        if not session.exec(select(User).where(User.name == request.username)).first():
+            user = User(
                 name=request.username,
                 is_admin=request.is_admin,
                 is_active=False,
             )
 
-            registration_code = models.RegistrationCode(
+            registration_code = RegistrationCode(
                 code=create_shareable_registration_code(),
                 valid_until=datetime.now() + config.auth_valid_registration_code_time,
             )
@@ -115,7 +116,7 @@ async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_admin_token
 @app.patch("/admin/user")
 async def update_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)], request: UpdateUserRequest) -> Response:
     with get_session() as session:
-        user: models.User = session.exec(select(models.User).where(models.User.name == request.username)).one_or_none()
+        user: User = session.exec(select(User).where(User.name == request.username)).one_or_none()
         if not user:
             return Response(status_code=404, content="User not found")
 
@@ -129,7 +130,7 @@ async def update_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)]
 @app.delete("/admin/user")
 async def delete_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)], request: DeleteUserRequest) -> Response:
     with get_session() as session:
-        user: models.User = session.exec(select(models.User).where(models.User.name == request.username)).one_or_none()
+        user: User = session.exec(select(User).where(User.name == request.username)).one_or_none()
         if not user:
             return Response(status_code=404, content="User not found")
         session.delete(user)
