@@ -2,7 +2,7 @@ from fastapi import FastAPI, Response
 from .config import config
 from .db import create_engine, get_session, models, create_user
 from sqlmodel import SQLModel, select
-from .utils import time_now
+from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
 from typing import Annotated
 from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse
@@ -10,7 +10,6 @@ from uuid import UUID
 from datetime import datetime, time
 from .physical import door
 from uuid import uuid4
-import secrets
 
 # TODO DELETED
 from pathlib import Path
@@ -82,6 +81,7 @@ async def register(data: RegistrationRequest) -> Response:
         return Response(status_code=200, content="User registered successfully")
     return Response(status_code=401, content="Invalid credentials")
 
+
 @app.post("/admin/create_user", response_model=CreateUserResponse)
 async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: CreateUserRequest) -> Response:
     if claim.is_admin:
@@ -94,7 +94,7 @@ async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], re
                 )
 
                 registration_code = models.RegistrationCode(
-                    code=secrets.token_urlsafe(8),
+                    code=create_shareable_registration_code(),
                     valid_until=datetime.now() + config.auth_valid_registration_code_time,
                 )
                 session.add(registration_code)
