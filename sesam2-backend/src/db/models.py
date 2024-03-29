@@ -28,13 +28,19 @@ class DoorGrant(DBModel, table=True):
     user: "User" = Relationship(back_populates="door_grants")
 
 
+class UserGroupLink(SQLModel, table=True):
+    user_uuid: UUID | None = Field(default=None, foreign_key="user.uuid", primary_key=True)
+    group_uuid: UUID | None = Field(default=None, foreign_key="group.uuid", primary_key=True)
+
+
 class Group(DBModel, table=True):
     uuid: UUID | None = Field(primary_key=True, default_factory=uuid4)
     name: str = Field(index=True, unique=True)
     description: str
 
     door_grants: List[DoorGrant] = Relationship(back_populates="group")
-    users: List["User"] = Relationship(back_populates="group")
+
+    users: List["User"] = Relationship(back_populates="groups", link_model=UserGroupLink)
 
 
 class User(DBModel, table=True):
@@ -44,8 +50,7 @@ class User(DBModel, table=True):
     is_admin: bool = False
     is_active: bool = False
 
-    group_uuid: UUID | None = Field(foreign_key="group.uuid")
-    group: Group = Relationship(back_populates="users")
+    groups: List[Group] = Relationship(back_populates="users", link_model=UserGroupLink)
 
     door_grants: List[DoorGrant] = Relationship(back_populates="user")
 
