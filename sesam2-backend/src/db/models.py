@@ -58,3 +58,9 @@ class RegistrationCode(DBModel, table=True):
     valid_until: datetime
 
     user: User = Relationship(back_populates="registration_code")
+
+
+class DoorStats(DBModel, table=True):
+    door_uuid: UUID = Field(primary_key=True, default_factory=uuid4)
+    last_opened: datetime | None = None
+    open_count: int = 0

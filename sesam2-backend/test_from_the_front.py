@@ -174,6 +174,10 @@ def test_open_valid_door(admin_token):
     response = requests.post(url, headers=auth_header(admin_token))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
+    # we do some more to manually check the db for the increment
+    requests.post(url, headers=auth_header(admin_token))
+    requests.post(url, headers=auth_header(admin_token))
+    requests.post(url, headers=auth_header(admin_token))
 
 def test_open_invalid_door(admin_token):
     url = f"{APP_URL}/open?door_id={INVALID_DOOR_ID}"

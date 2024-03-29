@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Response
 from .config import config
 from .db import create_engine, get_session, create_user
+from .db.query import log_door_stats
 from .db.models import User, RegistrationCode, DoorGrant
 from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
@@ -151,5 +152,9 @@ async def open_door(claim: Annotated[JWTClaims, Depends(validate_token)], door_i
             door.open(door_id)
         except Exception as e:
             return {"error": str(e)}
+        finally:
+            with get_session() as session:
+                log_door_stats(session, door_id)
+                session.commit()
         return DoorResponse(message="door opened successful", status='success', door_id=door_id)
     return DoorResponse(message="access denied", status='error', door_id=door_id)
