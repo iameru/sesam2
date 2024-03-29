@@ -6,8 +6,11 @@ from ..utils import time_now
 
 
 class DBModel(SQLModel):
-    created: Optional[datetime] = Field(default_factory=time_now)
-    updated: datetime | None = None
+    created_at: Optional[datetime] = Field(default_factory=time_now)
+    updated_at: datetime | None = Field(
+        default=None,
+        sa_column_kwargs={"onupdate": time_now, "nullable": True}
+    )
 
 
 class DoorGrant(DBModel, table=True):
