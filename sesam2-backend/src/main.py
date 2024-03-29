@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Response
 from .config import config
 from .db import create_engine, get_session, models, create_user
-from sqlmodel import SQLModel, select
+from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
 from typing import Annotated
-from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse
+from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest
 from uuid import UUID
 from datetime import datetime, time
 from .physical import door
@@ -103,6 +103,23 @@ async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], re
                 session.commit()
 
             return CreateUserResponse(status='success', message='User created successfully', registration_code=registration_code.code)
+    return Response(status_code=401, content="Invalid credentials")
+
+
+@app.post("/admin/update_user")
+async def update_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: UpdateUserRequest) -> Response:
+    if not claim.is_admin:
+        return Response(status_code=401, content="Invalid credentials")
+    with get_session() as session:
+        user: models.User = session.exec(select(models.User).where(models.User.name == request.username)).one_or_none()
+        if not user:
+            return Response(status_code=404, content="User not found")
+
+        new_user_data = request.model_dump(exclude_unset=True)
+        user.sqlmodel_update(new_user_data)
+        session.add(user)
+        session.commit()
+        return JSONResponse(status='success', message='User updated successfully')
     return Response(status_code=401, content="Invalid credentials")
 
 

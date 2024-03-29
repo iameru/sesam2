@@ -106,10 +106,16 @@ def test_create_user_by_normal_user_fails(normal_token):
     assert response.status_code == 401
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
 def test_update_user(admin_token):
     url = f"{APP_URL}/admin/update_user"
-    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', password='knuti3000', is_admin=True))
+    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', is_admin=True))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+    response = get_token('knut', 'knut')
+    token = response.json()
+    decoded = decode_token(token)
+    assert decoded.get('is_admin') == True
+    requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', is_admin=True))
 
 
 @pytest.mark.skip(reason="This is not implemented yet.")

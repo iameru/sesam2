@@ -60,6 +60,11 @@ class RegistrationRequest(TokenRequest):
     registration_code: str
 
 
+class UpdateUserRequest(BaseModel):
+    username: str
+    is_admin: bool | None = None
+    is_active: bool | None = None
+
+
 class CreateUserRequest(TokenRequest):
     is_admin: bool = False
-
