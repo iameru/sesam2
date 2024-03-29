@@ -14,34 +14,30 @@ from .physical import door
 from uuid import uuid4
 
 
-# TODO DELETED
-from pathlib import Path
-Path("db.sqlite3").unlink(missing_ok=True)
-
-## create the database and the initial admin
-SQLModel.metadata.create_all(create_engine())
-with get_session() as session:
-    admin_user = create_user(session,
-                             username=config.admin_user,
-                             hashed_password=get_password_hash(config.admin_user_password),
-                             is_admin=True,
-                             is_active=True,
-                             )
-    # to be deleted ##########################
-    normal_user = create_user(session, username='test', hashed_password=get_password_hash('test'), is_active=True)
-
-    now = time_now()
-    [session.add(door_grant) for door_grant in [
-        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=1, grant_start=time(hour=8), grant_end=time(hour=16)),
-        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=2, grant_start=time(hour=8), grant_end=time(hour=16)),
-        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
-        DoorGrant(user_uuid=admin_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
-        DoorGrant(user_uuid=admin_user.uuid, door_uuid="001b823d-1f5c-4f39-9e74-015bb2dcef8f", weekday=now.isoweekday(), grant_start=time(hour=now.hour), grant_end=time(hour=23)),
-        DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=8), grant_end=time(hour=9)),
-        DoorGrant(user_uuid=normal_user.uuid, door_uuid=uuid4(), weekday=4, grant_start=time(hour=14), grant_end=time(hour=15)),
-    ]]
-    # is for development only #################
-    session.commit()
+if config.dev_mode:
+    print("DEVELOPMENT MODE")
+    # start with a fresh DB every time
+    from pathlib import Path
+    Path("db.sqlite3").unlink(missing_ok=True)
+    SQLModel.metadata.create_all(create_engine())
+    with get_session() as session:
+        admin_user = create_user(session,
+             username=config.admin_user,
+             hashed_password=get_password_hash(config.admin_user_password),
+             is_admin=True,
+             is_active=True,
+         )
+        normal_user = create_user(session, username='test', hashed_password=get_password_hash('test'), is_active=True)
+        session.add(DoorGrant(
+            user_uuid=admin_user.uuid, 
+            door_uuid="001b823d-1f5c-4f39-9e74-015bb2dcef8f",
+            weekday=time_now().isoweekday(),
+            grant_start=time(hour=time_now().hour),
+            grant_end=time(hour=23),
+        ))
+        session.commit()
+else:
+    SQLModel.metadata.create_all(create_engine())
 
 
 app = FastAPI()

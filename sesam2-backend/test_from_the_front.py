@@ -137,7 +137,9 @@ def test_delete_user_by_normal_user_fails(normal_token):
 
 
 def grant(*, door_uuid = VALID_DOOR_ID, weekday = randint(1,7), grant_start = randint(0,23), grant_end = randint(0,23)):
-    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=f"{grant_start}:00:00", grant_end=f"{grant_end}:00:00")
+    grant_start = time(grant_start).isoformat()
+    grant_end = time(grant_end).isoformat()
+    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
 
 
 def test_add_and_delete_grants_to_users(admin_token):

@@ -6,7 +6,8 @@ class Config(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix='sesam2_')
 
-    database_url: str
+    dev_mode: bool = False
+    database_url: str 
     secret_key: str
     timezone: tz = tz(timedelta(hours=1))
     auth_valid_registration_code_time: timedelta = timedelta(hours=1)
