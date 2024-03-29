@@ -77,3 +77,17 @@ def validate_token(
         )
 
     return claims
+
+
+def validate_admin_token(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> JWTClaims:
+    """Validate a JWT and return the signed claims it contains if it is an admin token."""
+    claims = validate_token(token)
+    if not claims.is_admin:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED,
+            "Not enough permissions",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return claims

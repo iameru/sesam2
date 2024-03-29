@@ -106,6 +106,7 @@ def test_create_user_by_normal_user_fails(normal_token):
     url = f"{APP_URL}/admin/user"
     response = requests.post(url, headers=auth_header(normal_token), json=dict(username='sue'))
     assert response.status_code == 401
+    assert response.json().get('detail') == 'Not enough permissions'
 
 
 def test_update_user(admin_token):
@@ -128,7 +129,6 @@ def test_delete_user(admin_token):
     assert response.json().get('status') == 'success'
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
 def test_delete_user_by_normal_user_fails(normal_token):
     url = f"{APP_URL}/admin/user"
     response = requests.delete(url, headers=auth_header(normal_token), json=dict(username='test'))
@@ -137,7 +137,6 @@ def test_delete_user_by_normal_user_fails(normal_token):
 
 def grant(*, username, door_id = VALID_DOOR_ID, weekday = now.isoweekday(), grant_start = now.hour - 1, grant_end = now.hour + 1):
     return dict(username=username, door_id=door_id, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
-
 
 
 @pytest.mark.skip(reason="This is not implemented yet.")
@@ -184,10 +183,7 @@ def test_open_invalid_door(admin_token):
 
 # INFO
 
-@pytest.mark.skip(reason="This is not implemented yet.")
 def test_get_info_about_backend():
-    url = f"{APP_URL}/info"
+    url = f"{APP_URL}/are-we-online"
     response = requests.get(url)
     assert response.status_code == 200
-    assert response.json().get('status') == 'success'
-
