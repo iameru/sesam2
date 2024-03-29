@@ -46,7 +46,7 @@ class JSONResponse(BaseModel):
 
 
 class DoorResponse(JSONResponse):
-    door_id: UUID
+    door_uuid: UUID
 
 
 class CreateUserResponse(JSONResponse):

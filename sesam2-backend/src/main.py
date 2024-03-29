@@ -6,7 +6,7 @@ from .db.models import User, RegistrationCode, DoorGrant, Group
 from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, validate_admin_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
-from typing import Annotated
+from typing import Annotated, List
 from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest, CreateGroupRequest, DeleteGroupRequest, PutGrantRequest, UserGroupRequest, DeleteGroupRequest
 from uuid import UUID
 from datetime import datetime, time
@@ -249,21 +249,42 @@ async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)],
 
 
 @app.post("/open", response_model=DoorResponse)
-async def open_door(claim: Annotated[JWTClaims, Depends(validate_token)], door_id: UUID):
+async def open_door(claim: Annotated[JWTClaims, Depends(validate_token)], door_uuid: UUID):
     """ We'll open the door """
-    valid_grant = filter(
-        lambda grant: grant.door_uuid == door_id 
-        and grant.weekday == time_now().isoweekday() 
-        and grant.grant_start <= time_now().time() <= grant.grant_end, claim.door_grants)
 
-    if any(valid_grant):
+    def access(grants = List[DoorGrant]) -> bool:
+        valid_grants = filter(
+            lambda grant: grant.door_uuid == door_uuid 
+            and grant.weekday == time_now().isoweekday() 
+            and grant.grant_start <= time_now().time() <= grant.grant_end,
+            grants
+        )
+        if any(valid_grants):
+            return True
+        return False
+
+    def open_door(session = None, *, door_uuid: UUID) -> Response:
         try:
-            door.open(door_id)
+            door.open(door_uuid)
         except Exception as e:
             return {"error": str(e)}
         finally:
-            with get_session() as session:
-                log_door_stats(session, door_id)
+            if not session:
+                with get_session() as session:
+                    log_door_stats(session, door_uuid)
+                    session.commit()
+            else:
+                log_door_stats(session, door_uuid)
                 session.commit()
-        return DoorResponse(message="door opened successful", status='success', door_id=door_id)
-    return DoorResponse(message="access denied", status='error', door_id=door_id)
+        return DoorResponse(message="door opened successful", status='success', door_uuid=door_uuid)
+
+    if access(claim.door_grants):
+        return open_door(door_uuid=door_uuid)
+    else:
+        with get_session() as session:
+            user = session.exec(select(User).where(User.name == claim.name)).one()
+            for group in user.groups:
+                if access(group.door_grants):
+                    return open_door(session=session, door_uuid=door_uuid)
+
+    return Response(status_code=401, content="Access denied")

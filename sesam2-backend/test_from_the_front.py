@@ -137,14 +137,12 @@ def test_delete_user_by_normal_user_fails(normal_token):
 
 
 def grant(*, door_uuid = VALID_DOOR_ID, weekday = randint(1,7), grant_start = randint(0,23), grant_end = randint(0,23)):
-    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
+    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=f"{grant_start}:00:00", grant_end=f"{grant_end}:00:00")
 
 
 def test_add_and_delete_grants_to_users(admin_token):
     url = f"{APP_URL}/admin/grants"
-    grants = [grant() for _ in range(10)]
-    # valid one now
-    grants.append(grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 1))
+    grants = [grant() for _ in range(1)]
     response = requests.put(url, headers=auth_header(admin_token), json=dict(target='user', target_name='knut', grants=grants))
     if response.status_code != 200:
         print(response.json())
@@ -167,8 +165,6 @@ def test_create_group(admin_token):
 def test_add_and_delete_grants_to_groups(admin_token):
     url = f"{APP_URL}/admin/grants"
     grants = [grant() for _ in range(10)]
-    # valid one now
-    grants.append(grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 1))
     response = requests.put(url, headers=auth_header(admin_token), json=dict(target='group', target_name='testgroup', grants=grants))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
@@ -206,12 +202,6 @@ def test_update_group(admin_token):
     assert response.json().get('status') == 'success'
 
 
-def test_delete_group(admin_token):
-    url = f"{APP_URL}/admin/group"
-    response = requests.delete(url, headers=auth_header(admin_token), json=dict(name='testgroup'))
-    assert response.status_code == 200
-    assert response.json().get('status') == 'success'
-
 # def test_add_user_to_group(admin_token):
 #     url = f"{APP_URL}/admin/group"
 #     response = requests.post(url, headers=auth_header(admin_token), json=dict(group='testgroup', user='knut'))
@@ -220,7 +210,7 @@ def test_delete_group(admin_token):
 
 def test_open_valid_door(admin_token):
     """ Our admin also has the grant to open the door currently in DEV environment """
-    url = f"{APP_URL}/open?door_id={VALID_DOOR_ID}"
+    url = f"{APP_URL}/open?door_uuid={VALID_DOOR_ID}"
     response = requests.post(url, headers=auth_header(admin_token))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
@@ -229,11 +219,30 @@ def test_open_valid_door(admin_token):
     requests.post(url, headers=auth_header(admin_token))
     requests.post(url, headers=auth_header(admin_token))
 
+
+def test_open_door_by_normal_user_via_group(admin_token):
+    # we add a grant to the group
+    grants = [grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 2)]
+    response = requests.put(f"{APP_URL}/admin/grants", headers=auth_header(admin_token), json=dict(target='group', target_name='testgroup', grants=grants))
+
+    url = f"{APP_URL}/open?door_uuid={VALID_DOOR_ID}"
+    response = get_token('knut', 'knut')
+    token = response.json()
+    response = requests.post(url, headers=auth_header(token))
+    assert response.status_code == 200
+
+
 def test_open_invalid_door(admin_token):
-    url = f"{APP_URL}/open?door_id={INVALID_DOOR_ID}"
+    url = f"{APP_URL}/open?door_uuid={INVALID_DOOR_ID}"
     response = requests.post(url, headers=auth_header(admin_token))
     assert response.status_code == 422
 
+
+def test_delete_group(admin_token):
+    url = f"{APP_URL}/admin/group"
+    response = requests.delete(url, headers=auth_header(admin_token), json=dict(name='testgroup'))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
 
 # INFO
 
