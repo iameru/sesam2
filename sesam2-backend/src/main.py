@@ -2,16 +2,17 @@ from fastapi import FastAPI, Response
 from .config import config
 from .db import create_engine, get_session, create_user
 from .db.query import log_door_stats
-from .db.models import User, RegistrationCode, DoorGrant
+from .db.models import User, RegistrationCode, DoorGrant, Group
 from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, validate_admin_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
 from typing import Annotated
-from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest, CreateGroupRequest, DeleteGroupRequest
+from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest, CreateGroupRequest, DeleteGroupRequest, PutGrantRequest, UserGroupRequest, DeleteGroupRequest
 from uuid import UUID
 from datetime import datetime, time
 from .physical import door
 from uuid import uuid4
+
 
 # TODO DELETED
 from pathlib import Path
@@ -139,8 +140,69 @@ async def delete_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)]
         return JSONResponse(status='success', message='User deleted successfully')
 
 
-from .models import PutGrantRequest
-from .db.models import Group
+@app.post("/admin/group")
+async def create_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
+    with get_session() as session:
+        if not session.exec(select(Group).where(Group.name == group.name)).first():
+            group = Group(name=group.name, description=group.description)
+            session.add(group)
+            session.commit()
+            return JSONResponse(status='success', message='Group created successfully')
+    return Response(status_code=400, content="Group already exists")
+
+
+@app.put("/admin/usergroup")
+async def add_user_to_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], usergroup: UserGroupRequest) -> Response:
+    with get_session() as session:
+        user: User = session.exec(select(User).where(User.name == usergroup.username)).one_or_none()
+        if not user:
+            return Response(status_code=404, content="User not found")
+        group = session.exec(select(Group).where(Group.name == usergroup.groupname)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        user.groups.append(group)
+        session.add(user)
+        session.commit()
+        return JSONResponse(status='success', message='User added to group successfully')
+
+
+@app.delete("/admin/usergroup")
+async def remove_user_from_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], usergroup: UserGroupRequest) -> Response:
+    with get_session() as session:
+        user: User = session.exec(select(User).where(User.name == usergroup.username)).one_or_none()
+        if not user:
+            return Response(status_code=404, content="User not found")
+        group = session.exec(select(Group).where(Group.name == usergroup.groupname)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        user.groups.remove(group)
+        session.add(user)
+        session.commit()
+        return JSONResponse(status='success', message='User removed from group successfully')
+
+
+@app.patch("/admin/group")
+async def update_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
+    with get_session() as session:
+        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        group.description = group.description
+        session.add(group)
+        session.commit()
+        return JSONResponse(status='success', message='Group updated successfully')
+
+
+@app.delete("/admin/group")
+async def delete_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: DeleteGroupRequest) -> Response:
+    with get_session() as session:
+        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        session.delete(group)
+        session.commit()
+        return JSONResponse(status='success', message='Group deleted successfully')
+
 
 @app.put("/admin/grants")
 async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)], request: PutGrantRequest) -> Response:
@@ -184,40 +246,6 @@ async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)],
 
             session.commit()
             return JSONResponse(status='success', message='Grants added successfully')
-
-
-@app.post("/admin/group")
-async def create_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
-    with get_session() as session:
-        if not session.exec(select(Group).where(Group.name == group.name)).first():
-            group = Group(name=group.name, description=group.description)
-            session.add(group)
-            session.commit()
-            return JSONResponse(status='success', message='Group created successfully')
-    return Response(status_code=400, content="Group already exists")
-
-
-@app.patch("/admin/group")
-async def update_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
-    with get_session() as session:
-        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
-        if not group:
-            return Response(status_code=404, content="Group not found")
-        group.description = group.description
-        session.add(group)
-        session.commit()
-        return JSONResponse(status='success', message='Group updated successfully')
-
-
-@app.delete("/admin/group")
-async def delete_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: DeleteGroupRequest) -> Response:
-    with get_session() as session:
-        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
-        if not group:
-            return Response(status_code=404, content="Group not found")
-        session.delete(group)
-        session.commit()
-        return JSONResponse(status='success', message='Group deleted successfully')
 
 
 @app.post("/open", response_model=DoorResponse)

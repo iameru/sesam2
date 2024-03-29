@@ -88,3 +88,10 @@ class CreateGroupRequest(BaseModel):
 
 class DeleteGroupRequest(BaseModel):
     name: str
+
+class UserGroupRequest(BaseModel):
+    username: str
+    groupname: str
+
+class DeleteUserGroupRequest(UserGroupRequest):
+    pass

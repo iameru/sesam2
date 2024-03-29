@@ -178,11 +178,33 @@ def test_add_and_delete_grants_to_groups(admin_token):
     assert response.json().get('status') == 'success'
 
 
+def test_add_user_to_group(admin_token):
+    url = f"{APP_URL}/admin/usergroup"
+    response = requests.put(url, headers=auth_header(admin_token), json=dict(username='knut', groupname='testgroup'))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+
+def test_remove_user_from_group(admin_token):
+    url = f"{APP_URL}/admin/group"
+    requests.post(url, headers=auth_header(admin_token), json=dict(name='testgroup2', description='this is a test group'))
+    # put user in group
+    url = f"{APP_URL}/admin/usergroup"
+    requests.put(url, headers=auth_header(admin_token), json=dict(username='knut', groupname='testgroup2'))
+    # remove user from group
+    response = requests.delete(url, headers=auth_header(admin_token), json=dict(username='knut', groupname='testgroup2'))
+    if response.status_code != 200:
+        print(response.text)
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+
 def test_update_group(admin_token):
     url = f"{APP_URL}/admin/group"
     response = requests.patch(url, headers=auth_header(admin_token), json=dict(name='testgroup', description='this is the best group ever'))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
+
 
 def test_delete_group(admin_token):
     url = f"{APP_URL}/admin/group"
