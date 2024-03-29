@@ -7,7 +7,7 @@ from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, validate_admin_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
 from typing import Annotated
-from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest
+from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest, CreateGroupRequest, DeleteGroupRequest
 from uuid import UUID
 from datetime import datetime, time
 from .physical import door
@@ -137,6 +137,87 @@ async def delete_user(claim: Annotated[JWTClaims, Depends(validate_admin_token)]
         session.delete(user)
         session.commit()
         return JSONResponse(status='success', message='User deleted successfully')
+
+
+from .models import PutGrantRequest
+from .db.models import Group
+
+@app.put("/admin/grants")
+async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)], request: PutGrantRequest) -> Response:
+    with get_session() as session:
+        if request.target == 'user':
+            user: User = session.exec(select(User).where(User.name == request.target_name)).one_or_none()
+            if not user:
+                return Response(status_code=404, content="User not found")
+            for grant in user.door_grants:
+                session.delete(grant)
+
+            for request_grant in request.grants:
+                # grant = DoorGrant(user_uuid=user.uuid, **request_grant.model_dump())
+                grant = DoorGrant(
+                    user_uuid=user.uuid,
+                    door_uuid=request_grant.door_uuid,
+                    weekday=request_grant.weekday,
+                    grant_start=request_grant.grant_start,
+                    grant_end=request_grant.grant_end,
+                )
+                session.add(grant)
+
+            session.commit()
+            return JSONResponse(status='success', message='Grants added successfully')
+        elif request.target == 'group':
+            group = session.exec(select(Group).where(Group.name == request.target_name)).one_or_none()
+            if not group:
+                return Response(status_code=404, content="Group not found")
+            for grant in group.door_grants:
+                session.delete(grant)
+
+            for request_grant in request.grants:
+                grant = DoorGrant(
+                    group_uuid=group.uuid,
+                    door_uuid=request_grant.door_uuid,
+                    weekday=request_grant.weekday,
+                    grant_start=request_grant.grant_start,
+                    grant_end=request_grant.grant_end,
+                )
+                session.add(grant)
+
+            session.commit()
+            return JSONResponse(status='success', message='Grants added successfully')
+
+
+@app.post("/admin/group")
+async def create_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
+    with get_session() as session:
+        if not session.exec(select(Group).where(Group.name == group.name)).first():
+            group = Group(name=group.name, description=group.description)
+            session.add(group)
+            session.commit()
+            return JSONResponse(status='success', message='Group created successfully')
+    return Response(status_code=400, content="Group already exists")
+
+
+@app.patch("/admin/group")
+async def update_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: CreateGroupRequest) -> Response:
+    with get_session() as session:
+        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        group.description = group.description
+        session.add(group)
+        session.commit()
+        return JSONResponse(status='success', message='Group updated successfully')
+
+
+@app.delete("/admin/group")
+async def delete_group(claim: Annotated[JWTClaims, Depends(validate_admin_token)], group: DeleteGroupRequest) -> Response:
+    with get_session() as session:
+        group = session.exec(select(Group).where(Group.name == group.name)).one_or_none()
+        if not group:
+            return Response(status_code=404, content="Group not found")
+        session.delete(group)
+        session.commit()
+        return JSONResponse(status='success', message='Group deleted successfully')
 
 
 @app.post("/open", response_model=DoorResponse)

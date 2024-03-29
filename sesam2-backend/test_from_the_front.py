@@ -15,6 +15,7 @@ import jose
 from jose import jwt
 import pytest
 from datetime import datetime, time, timedelta
+from random import randint
 
 
 INVALID_DOOR_ID = "0000000000000-1000-1000-000000000000"
@@ -135,36 +136,63 @@ def test_delete_user_by_normal_user_fails(normal_token):
     assert response.status_code == 401
 
 
-def grant(*, username, door_id = VALID_DOOR_ID, weekday = now.isoweekday(), grant_start = now.hour - 1, grant_end = now.hour + 1):
-    return dict(username=username, door_id=door_id, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
+def grant(*, door_uuid = VALID_DOOR_ID, weekday = randint(1,7), grant_start = randint(0,23), grant_end = randint(0,23)):
+    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
-def test_add_grant(admin_token):
-    url = f"{APP_URL}/admin/add_grant"
-    grant = grant(username='knut')
-    response = requests.post(url, headers=auth_header(admin_token), json=grant)
+def test_add_and_delete_grants_to_users(admin_token):
+    url = f"{APP_URL}/admin/grants"
+    grants = [grant() for _ in range(10)]
+    # valid one now
+    grants.append(grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 1))
+    response = requests.put(url, headers=auth_header(admin_token), json=dict(target='user', target_name='knut', grants=grants))
+    if response.status_code != 200:
+        print(response.json())
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+    response = requests.put(url, headers=auth_header(admin_token), json=dict(target='user', target_name='knut', grants=[]))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
-def test_remove_grant(admin_token):
-    url = f"{APP_URL}/admin/remove_grant"
-    grant = grant(username='knut')
-    response = requests.post(url, headers=auth_header(admin_token), json=grant)
+def test_create_group(admin_token):
+    url = f"{APP_URL}/admin/group"
+    response = requests.post(url, headers=auth_header(admin_token), json=dict(name='testgroup', description='this is a test group'))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
-def test_add_grants(admin_token):
-    url = f"{APP_URL}/admin/add_grants"
-    response = requests.post(url, headers=auth_header(admin_token), json=dict(grants=[grant(username='knut') for _ in range(10)]))
+
+def test_add_and_delete_grants_to_groups(admin_token):
+    url = f"{APP_URL}/admin/grants"
+    grants = [grant() for _ in range(10)]
+    # valid one now
+    grants.append(grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 1))
+    response = requests.put(url, headers=auth_header(admin_token), json=dict(target='group', target_name='testgroup', grants=grants))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+    response = requests.put(url, headers=auth_header(admin_token), json=dict(target='group', target_name='testgroup', grants=[]))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
 
 
+def test_update_group(admin_token):
+    url = f"{APP_URL}/admin/group"
+    response = requests.patch(url, headers=auth_header(admin_token), json=dict(name='testgroup', description='this is the best group ever'))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+def test_delete_group(admin_token):
+    url = f"{APP_URL}/admin/group"
+    response = requests.delete(url, headers=auth_header(admin_token), json=dict(name='testgroup'))
+    assert response.status_code == 200
+    assert response.json().get('status') == 'success'
+
+# def test_add_user_to_group(admin_token):
+#     url = f"{APP_URL}/admin/group"
+#     response = requests.post(url, headers=auth_header(admin_token), json=dict(group='testgroup', user='knut'))
 
 # DOORS
 

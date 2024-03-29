@@ -1,7 +1,7 @@
 from pydantic import BaseModel, field_serializer
 from datetime import datetime, time
 from uuid import UUID
-from typing import Literal
+from typing import Literal, List
 from enum import StrEnum
 
 STATUS = Literal['success', 'error']
@@ -25,8 +25,14 @@ class JWTDoorGrant(BaseModel):
 class JWTClaims(BaseModel):
     name: str
     exp: datetime
-    door_grants: list[JWTDoorGrant] = []
+    door_grants: List[JWTDoorGrant] = []
     is_admin: bool = False
+
+
+class PutGrantRequest(BaseModel):
+    target: Literal['user', 'group']
+    target_name: str
+    grants: List[JWTDoorGrant]
 
 
 class JWTResponse(BaseModel):
@@ -73,3 +79,12 @@ class CreateUserRequest(BaseModel):
 
 class DeleteUserRequest(BaseModel):
     username: str
+
+
+class CreateGroupRequest(BaseModel):
+    name: str
+    description: str
+
+
+class DeleteGroupRequest(BaseModel):
+    name: str
