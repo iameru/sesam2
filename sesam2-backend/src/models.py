@@ -62,9 +62,14 @@ class RegistrationRequest(TokenRequest):
 
 class UpdateUserRequest(BaseModel):
     username: str
-    is_admin: bool | None = None
+    is_admin: bool | None = False
     is_active: bool | None = None
 
 
-class CreateUserRequest(TokenRequest):
+class CreateUserRequest(BaseModel):
+    username: str
     is_admin: bool = False
+
+
+class DeleteUserRequest(BaseModel):
+    username: str

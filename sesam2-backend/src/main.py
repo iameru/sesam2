@@ -5,7 +5,7 @@ from sqlmodel import SQLModel, select, update
 from .utils import time_now, create_shareable_registration_code
 from .auth import create_token, validate_token, get_password_hash, verify_password, JWTClaims, JWTResponse, Depends
 from typing import Annotated
-from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest
+from .models import DoorResponse, JSONResponse, TokenRequest, RegistrationRequest, CreateUserRequest, CreateUserResponse, UpdateUserRequest, DeleteUserRequest
 from uuid import UUID
 from datetime import datetime, time
 from .physical import door
@@ -82,7 +82,7 @@ async def register(data: RegistrationRequest) -> Response:
     return Response(status_code=401, content="Invalid credentials")
 
 
-@app.post("/admin/create_user", response_model=CreateUserResponse)
+@app.post("/admin/user", response_model=CreateUserResponse)
 async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: CreateUserRequest) -> Response:
     if claim.is_admin:
         with get_session() as session:
@@ -102,11 +102,12 @@ async def create_a_user(claim: Annotated[JWTClaims, Depends(validate_token)], re
                 session.add(user)
                 session.commit()
 
-            return CreateUserResponse(status='success', message='User created successfully', registration_code=registration_code.code)
+                return CreateUserResponse(status='success', message='User created successfully', registration_code=registration_code.code)
+            return Response(status_code=400, content="User already exists")
     return Response(status_code=401, content="Invalid credentials")
 
 
-@app.post("/admin/update_user")
+@app.patch("/admin/user")
 async def update_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: UpdateUserRequest) -> Response:
     if not claim.is_admin:
         return Response(status_code=401, content="Invalid credentials")
@@ -120,6 +121,20 @@ async def update_user(claim: Annotated[JWTClaims, Depends(validate_token)], requ
         session.add(user)
         session.commit()
         return JSONResponse(status='success', message='User updated successfully')
+    return Response(status_code=401, content="Invalid credentials")
+
+
+@app.delete("/admin/user")
+async def delete_user(claim: Annotated[JWTClaims, Depends(validate_token)], request: DeleteUserRequest) -> Response:
+    if not claim.is_admin:
+        return Response(status_code=401, content="Invalid credentials")
+    with get_session() as session:
+        user: models.User = session.exec(select(models.User).where(models.User.name == request.username)).one_or_none()
+        if not user:
+            return Response(status_code=404, content="User not found")
+        session.delete(user)
+        session.commit()
+        return JSONResponse(status='success', message='User deleted successfully')
     return Response(status_code=401, content="Invalid credentials")
 
 

@@ -76,11 +76,13 @@ def test_get_broken_token_and_decode():
 
 
 def test_create_normal_user(admin_token):
-    url = f"{APP_URL}/admin/create_user"
-    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', password='knut'))
-    assert response.status_code == 200
-    assert response.json().get('status') == 'success'
+    url = f"{APP_URL}/admin/user"
+    for name in ['susan', 'berit', 'harriberat', 'jhoroo']:
+        response = requests.post(url, headers=auth_header(admin_token), json=dict(username=name))
+        assert response.status_code == 200
+        assert response.json().get('status') == 'success'
 
+    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='knut'))
     registration_code = response.json().get('registration_code')
     assert registration_code
 
@@ -101,14 +103,14 @@ def test_get_token_of_created_user():
 
 
 def test_create_user_by_normal_user_fails(normal_token):
-    url = f"{APP_URL}/admin/create_user"
-    response = requests.post(url, headers=auth_header(normal_token), json=dict(username='sue', password='sue'))
+    url = f"{APP_URL}/admin/user"
+    response = requests.post(url, headers=auth_header(normal_token), json=dict(username='sue'))
     assert response.status_code == 401
 
 
 def test_update_user(admin_token):
-    url = f"{APP_URL}/admin/update_user"
-    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', is_admin=True))
+    url = f"{APP_URL}/admin/user"
+    response = requests.patch(url, headers=auth_header(admin_token), json=dict(username='knut', is_admin=True))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
     response = get_token('knut', 'knut')
@@ -118,21 +120,18 @@ def test_update_user(admin_token):
     requests.post(url, headers=auth_header(admin_token), json=dict(username='knut', is_admin=True))
 
 
-@pytest.mark.skip(reason="This is not implemented yet.")
 def test_delete_user(admin_token):
-    url = f"{APP_URL}/admin/create_user"
-    requests.post(url, headers=auth_header(admin_token), json=dict(username='harribert', password='deleteme'))
-
-    url = f"{APP_URL}/admin/delete_user"
-    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='harribert'))
+    url = f"{APP_URL}/admin/user"
+    response = requests.post(url, headers=auth_header(admin_token), json=dict(username='tobedeleted'))
+    response = requests.delete(url, headers=auth_header(admin_token), json=dict(username='tobedeleted'))
     assert response.status_code == 200
     assert response.json().get('status') == 'success'
 
 
 @pytest.mark.skip(reason="This is not implemented yet.")
 def test_delete_user_by_normal_user_fails(normal_token):
-    url = f"{APP_URL}/admin/delete_user"
-    response = requests.post(url, headers=auth_header(normal_token), json=dict(username='test'))
+    url = f"{APP_URL}/admin/user"
+    response = requests.delete(url, headers=auth_header(normal_token), json=dict(username='test'))
     assert response.status_code == 401
 
 
