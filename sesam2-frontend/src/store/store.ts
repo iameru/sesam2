@@ -17,6 +17,12 @@ type user = {
   door_grants: doorGrant[],
   is_admin: boolean,
 }
+const defaultUser: user = {
+  name: '',
+  exp: 0,
+  door_grants: [],
+  is_admin: false,
+}
 
 
 const serverOnline = writable(load('serverOnline') || false)
@@ -33,7 +39,7 @@ accessToken.subscribe(value => {
 
 const user = writable(load('user') || null)
 user.subscribe(value => {
-    localStorage.setItem("user", value ? JSON.stringify(value): JSON.stringify(null));
+    localStorage.setItem("user", value ? JSON.stringify(value): JSON.stringify(defaultUser));
 })
 
 type Store = {
