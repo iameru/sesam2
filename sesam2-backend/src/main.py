@@ -12,6 +12,7 @@ from uuid import UUID
 from datetime import datetime, time
 from .physical import door
 from uuid import uuid4
+from fastapi.middleware.cors import CORSMiddleware
 
 
 if config.dev_mode:
@@ -41,6 +42,13 @@ else:
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[config.app_domain] if not config.dev_mode else ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/are-we-online")

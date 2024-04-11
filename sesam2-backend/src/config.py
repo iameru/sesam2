@@ -16,6 +16,7 @@ class Config(BaseSettings):
     jwt_algorithm: str = "HS256"
     admin_user: str
     admin_user_password: str
+    app_domain: str
 
 
 config = Config()
