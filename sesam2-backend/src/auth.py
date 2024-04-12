@@ -29,6 +29,7 @@ def create_token(user: User) -> JWTResponse:
         JWTDoorGrant(
             door_uuid=door_grant.door_uuid,
             weekday=door_grant.weekday,
+            name=door_grant.name,
             grant_start=door_grant.grant_start,
             grant_end=door_grant.grant_end,
         )

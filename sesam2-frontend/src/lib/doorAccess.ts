@@ -14,7 +14,7 @@ export function getCurrentlyValidDoors(user: UserType, date: Date): Door[] {
     }
     result.push({
       'uuid': grant.door_uuid,
-      'name': 'harri',
+      'name': grant.name,
     })
   })
   return result

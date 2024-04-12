@@ -23,6 +23,7 @@ class DoorGrant(DBModel, table=True):
     weekday: int
     grant_start: time
     grant_end: time
+    name: str
 
     group: "Group" = Relationship(back_populates="door_grants")
     user: "User" = Relationship(back_populates="door_grants")

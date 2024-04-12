@@ -12,6 +12,7 @@ class JWTDoorGrant(BaseModel):
     weekday: int
     grant_start: time
     grant_end: time
+    name: str
 
     @field_serializer('grant_start', 'grant_end')
     def serialize_time(self, time: time):

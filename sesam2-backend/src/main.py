@@ -32,6 +32,7 @@ if config.dev_mode:
         session.add(DoorGrant(
             user_uuid=admin_user.uuid, 
             door_uuid="001b823d-1f5c-4f39-9e74-015bb2dcef8f",
+            name="super door",
             weekday=time_now().isoweekday(),
             grant_start=time(hour=time_now().hour),
             grant_end=time(hour=23),
@@ -219,10 +220,10 @@ async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)],
                 session.delete(grant)
 
             for request_grant in request.grants:
-                # grant = DoorGrant(user_uuid=user.uuid, **request_grant.model_dump())
                 grant = DoorGrant(
                     user_uuid=user.uuid,
                     door_uuid=request_grant.door_uuid,
+                    name=request_grant.name,
                     weekday=request_grant.weekday,
                     grant_start=request_grant.grant_start,
                     grant_end=request_grant.grant_end,
@@ -242,6 +243,7 @@ async def add_grants(claim: Annotated[JWTClaims, Depends(validate_admin_token)],
                 grant = DoorGrant(
                     group_uuid=group.uuid,
                     door_uuid=request_grant.door_uuid,
+                    name=request_grant.name,
                     weekday=request_grant.weekday,
                     grant_start=request_grant.grant_start,
                     grant_end=request_grant.grant_end,

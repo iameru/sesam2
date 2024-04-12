@@ -139,7 +139,7 @@ def test_delete_user_by_normal_user_fails(normal_token):
 def grant(*, door_uuid = VALID_DOOR_ID, weekday = randint(1,7), grant_start = randint(0,23), grant_end = randint(0,23)):
     grant_start = time(grant_start).isoformat()
     grant_end = time(grant_end).isoformat()
-    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=grant_start, grant_end=grant_end)
+    return dict(door_uuid=door_uuid, weekday=weekday, grant_start=grant_start, grant_end=grant_end, name='testgrantdoor')
 
 
 def test_add_and_delete_grants_to_users(admin_token):
@@ -224,7 +224,7 @@ def test_open_valid_door(admin_token):
 
 def test_open_door_by_normal_user_via_group(admin_token):
     # we add a grant to the group
-    grants = [grant(weekday=now.isoweekday(), grant_start=now.hour, grant_end=now.hour + 2)]
+    grants = [grant(weekday=now.isoweekday(), grant_start=now.hour -1, grant_end=now.hour + 2)]
     response = requests.put(f"{APP_URL}/admin/grants", headers=auth_header(admin_token), json=dict(target='group', target_name='testgroup', grants=grants))
 
     url = f"{APP_URL}/open?door_uuid={VALID_DOOR_ID}"

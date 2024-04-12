@@ -8,6 +8,7 @@ type DoorGrant = {
   weekday: number
   grant_start: string
   grant_end: string
+  name: string
 }
 
 export type UserType = {
