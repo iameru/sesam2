@@ -1,6 +1,6 @@
 <script>
 import store from '../store/store.ts';
-import {makeLoginRequest} from '../login.ts';
+import {makeLoginRequest} from '../requests.ts';
 let username
 let password
 
@@ -10,8 +10,7 @@ let loggedIn
 store.loggedIn.subscribe((v) => { loggedIn = v })
 
 async function handleOnSubmit() {
-  const response = await makeLoginRequest(username, password)
-  console.log(response)
+  await makeLoginRequest(username, password)
 }
 </script>
 

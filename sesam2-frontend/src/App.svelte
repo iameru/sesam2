@@ -1,6 +1,6 @@
 <script>
 import Header from './Header.svelte';
-import Main from './Main.svelte';
+import DoorButtons from './lib/DoorButtons.svelte';
 import Footer from './Footer.svelte';
 import LoginForm from './lib/LoginForm.svelte';
 import Admin from './lib/Admin.svelte';
@@ -20,7 +20,7 @@ store.user.subscribe((v) => {isAdmin = v.is_admin})
     {#if !loggedIn}
       <LoginForm />
     {:else}
-      <Main />
+      <DoorButtons />
       {#if isAdmin}
       <Admin />
       {/if}

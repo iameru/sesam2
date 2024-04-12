@@ -1,23 +1,12 @@
 import { writable } from 'svelte/store'
+import type { UserType } from '../lib/types'
 
 
 function load(key: string): any {
   return JSON.parse(localStorage.getItem(key) || 'null')
 }
 
-type doorGrant = {
-  door_uuid: string
-  weekday: number
-  grant_start: string
-  grant_end: string
-}
-type user = {
-  name: string,
-  exp: number,
-  door_grants: doorGrant[],
-  is_admin: boolean,
-}
-const defaultUser: user = {
+const defaultUser: UserType = {
   name: '',
   exp: 0,
   door_grants: [],
@@ -56,4 +45,3 @@ const store: Store = {
   user,
 }
 export default store
-

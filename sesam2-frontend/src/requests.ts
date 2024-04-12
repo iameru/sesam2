@@ -1,6 +1,32 @@
 import Config from './config';
 import store from './store/store';
 
+// can I constrain this
+type Uuid = string;
+
+let accessToken: string | null
+store.accessToken.subscribe((v) => {accessToken = v})
+
+export async function openDoor(doorId: Uuid) {
+  if (!accessToken) {
+    console.error('no accessToken')
+    return
+  }
+  try {
+    const response = await fetch(Config.apiUrl + `/open?door_uuid=${doorId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    return response.ok ? true : false
+  } catch (error) {
+    console.error({error})
+  }
+}
+
 export async function makeLoginRequest(username: string, password: string) {
   try {
     const response = await fetch(Config.apiUrl + '/token', {
